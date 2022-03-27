@@ -49,7 +49,14 @@ def balance():
 
 @app.command()
 def list_servers():
-    print(Servers.list())
+    list_of_servers = Servers.list()
+    print('{0:7} {1:17} {2:2} {3:5} {4:4}'.format('state', 'name', 'vcpus', 'memory', 'disk'))
+    for i in list_of_servers['reglets']:
+        if i['status'] == 'active':
+            state = typer.style("Running", fg=typer.colors.GREEN)
+        else:
+            state = typer.style('Stopped', fg=typer.colors.RED)
+        print('{0:15} {1:20} {2:2} {3:5} {4:4}'.format(state, i['name'], i['vcpus'], i['memory'], i['disk']))
 
 
 @app.command()
@@ -66,14 +73,14 @@ def create_server(name: str = typer.Option(...), tariff: str = typer.Option(...)
 
 def get_api_key():
     config = configparser.ConfigParser()
-    config.read(os.path.join(os.getenv('XDG_CONFIG_HOME'), 'regructl.ini'))
+    config.read(os.path.join(os.getenv('HOME'), '.config', 'regructl.ini'))
     result = config.get('api', 'key', fallback=None)
     if result is None:
         result = input("Enter API Key ")
         config.add_section('api')
         config.set('api', 'key', result)
 
-        with open(os.path.join(os.getenv('XDG_CONFIG_HOME'), 'regructl.ini'), 'w') as configfile:
+        with open(os.path.join(os.getenv('HOME'), '.config', 'regructl.ini'), 'w') as configfile:
             config.write(configfile)
 
     return result
