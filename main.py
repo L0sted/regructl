@@ -30,6 +30,17 @@ class Servers:
                                  )
         return response.json()
 
+    @staticmethod
+    def stop(name):
+        endpoint = 'https://api.cloudvps.reg.ru/v1/reglets/{id}/actions'
+        data = {"type": "stop"}
+        list_of_servers = Servers.list()
+        for i in list_of_servers['reglets']:
+            if i['name'] == name:
+                result = requests.post(endpoint.format(id=i['id']), headers=reqHeader, json=data)
+                return result.json()
+        return None
+
 
 def get_balance():
     response = requests.get("https://api.cloudvps.reg.ru/v1/balance_data", headers=reqHeader)
@@ -37,7 +48,7 @@ def get_balance():
 
 
 @app.command()
-def get_tariffs():
+def list_plans():
     response = requests.get("https://api.cloudvps.reg.ru/v1/prices", headers=reqHeader)
     print('{0:17} {1:5} {2:5} {3:6}'.format('name', 'hour', 'month', 'unit'))
     for i in response.json()['prices']:
@@ -51,7 +62,7 @@ def balance():
 
 
 @app.command()
-def list_servers():
+def servers_list():
     list_of_servers = Servers.list()
     print('{0:7} {1:17} {2:2} {3:5} {4:4}'.format('state', 'name', 'vcpus', 'memory', 'disk'))
     for i in list_of_servers['reglets']:
@@ -70,8 +81,13 @@ def list_os():
 
 
 @app.command()
-def create_server(name: str = typer.Option(...), tariff: str = typer.Option(...), image: str = typer.Option(...)):
+def servers_create(name: str = typer.Option(...), tariff: str = typer.Option(...), image: str = typer.Option(...)):
     print(Servers.create(name=name, tariff=tariff, image=image))
+
+
+@app.command()
+def servers_stop(name: str = typer.Option(...)):
+    print(Servers.stop(name=name))
 
 
 def get_api_key():
