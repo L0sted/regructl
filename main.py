@@ -39,7 +39,10 @@ def get_balance():
 @app.command()
 def get_tariffs():
     response = requests.get("https://api.cloudvps.reg.ru/v1/prices", headers=reqHeader)
-    print(json.dumps(response.json(),indent=4))
+    print('{0:17} {1:5} {2:5} {3:6}'.format('name', 'hour', 'month', 'unit'))
+    for i in response.json()['prices']:
+        if i['type'] == 'reglet':
+            print('{0:17} {1:5} {2:5} {3:6}'.format(i['plan'], i['price'], i['price_month'], i['unit']))
 
 
 @app.command()
