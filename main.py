@@ -4,8 +4,13 @@ import configparser
 import requests
 import typer
 import os
+import prettytable
 
 app = typer.Typer()
+server_app = typer.Typer()
+app.add_typer(server_app, name='server')
+info_submenu = typer.Typer()
+app.add_typer(info_submenu, name='info')
 
 
 class Servers:
@@ -21,14 +26,27 @@ class Servers:
 
     @staticmethod
     def create(name, tariff, image):
-        response = requests.post("https://api.cloudvps.reg.ru/v1/reglets",
-                                 headers=reqHeader,
-                                 json={"name": name,
-                                       "size": tariff,
-                                       "image": image
-                                       }
-                                 )
+        response = requests.post(
+            "https://api.cloudvps.reg.ru/v1/reglets",
+            headers=reqHeader,
+            json={
+                "name": name,
+                "size": tariff,
+                "image": image
+            }
+        )
         return response.json()
+
+    @staticmethod
+    def start(name):
+        endpoint = 'https://api.cloudvps.reg.ru/v1/reglets/{id}/actions'
+        data = {"type": "start"}
+        list_of_servers = Servers.list()
+        for i in list_of_servers['reglets']:
+            if i['name'] == name:
+                result = requests.post(endpoint.format(id=i['id']), headers=reqHeader, json=data)
+                return result.json()
+        return None
 
     @staticmethod
     def stop(name):
@@ -47,7 +65,7 @@ def get_balance():
     return response.json()
 
 
-@app.command()
+@info_submenu.command()
 def list_plans():
     response = requests.get("https://api.cloudvps.reg.ru/v1/prices", headers=reqHeader)
     print('{0:17} {1:5} {2:5} {3:6}'.format('name', 'hour', 'month', 'unit'))
@@ -56,12 +74,19 @@ def list_plans():
             print('{0:17} {1:5} {2:5} {3:6}'.format(i['plan'], i['price'], i['price_month'], i['unit']))
 
 
+@info_submenu.command()
+def list_os():
+    systems_list = Servers.get_systems()['images']
+    for i in systems_list:
+        print(i['slug'])
+
+
 @app.command()
 def balance():
     print(get_balance())
 
 
-@app.command()
+@server_app.command("list")
 def servers_list():
     list_of_servers = Servers.list()
     print('{0:7} {1:17} {2:2} {3:5} {4:4}'.format('state', 'name', 'vcpus', 'memory', 'disk'))
@@ -73,19 +98,12 @@ def servers_list():
         print('{0:15} {1:20} {2:2} {3:5} {4:4}'.format(state, i['name'], i['vcpus'], i['memory'], i['disk']))
 
 
-@app.command()
-def list_os():
-    systems_list = Servers.get_systems()['images']
-    for i in systems_list:
-        print(i['slug'])
-
-
-@app.command()
+@server_app.command("create")
 def servers_create(name: str = typer.Option(...), tariff: str = typer.Option(...), image: str = typer.Option(...)):
     print(Servers.create(name=name, tariff=tariff, image=image))
 
 
-@app.command()
+@server_app.command("stop")
 def servers_stop(name: str = typer.Option(...)):
     print(Servers.stop(name=name))
 
